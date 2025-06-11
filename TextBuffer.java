@@ -67,6 +67,14 @@ public class TextBuffer {
         return sb.toString();
     }
 
+    public void setContent(String content) {
+        head = null;
+        length = 0;
+        for (int i = content.length() - 1; i >= 0; i--) {
+            insertAt(0, content.charAt(i));
+        }
+    }
+
     public int length() {
         return length;
     }
