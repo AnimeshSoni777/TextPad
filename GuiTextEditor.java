@@ -8,6 +8,7 @@ public class GuiTextEditor extends JFrame {
     private TextBuffer buffer;
     private Stack<Action> undoStack;
     private Stack<Action> redoStack;
+    private JButton saveButton;
     private JButton undoButton;
     private JButton redoButton;
     private boolean isProgrammaticChange = false;
@@ -30,12 +31,15 @@ public class GuiTextEditor extends JFrame {
     JPanel topPanel = new JPanel();
     topPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 
+    saveButton = new JButton("Save");
     undoButton = new JButton("Undo");
     redoButton = new JButton("Redo");
 
+    saveButton.addActionListener(e -> performSave());
     undoButton.addActionListener(e -> performUndo());
     redoButton.addActionListener(e -> performRedo());
 
+    topPanel.add(saveButton);
     topPanel.add(undoButton);
     topPanel.add(redoButton);
 
@@ -49,6 +53,13 @@ public class GuiTextEditor extends JFrame {
     private void setupKeyBindings() {
         InputMap im = textArea.getInputMap(JComponent.WHEN_FOCUSED);
         ActionMap am = textArea.getActionMap();
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK), "Save");
+        am.put("Save", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                performSave();
+            }
+        });
 
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK), "Undo");
         am.put("Undo", new AbstractAction() {
@@ -121,6 +132,21 @@ public class GuiTextEditor extends JFrame {
         });
     }
 
+    private void  performSave(){
+        JFileChooser fileChooser = new JFileChooser();
+        int option = fileChooser.showSaveDialog(this);
+
+        if(option==JFileChooser.APPROVE_OPTION){
+            try(BufferedWriter writer = new BufferedWriter(new FileWriter(fileChooser.getSelectedFile()))){
+                writer.write(textArea.getText());
+                JOptionPane.showMessageDialog(this, "File saved Succesfully!!!");
+            }catch(IOException e){
+                JOptionPane.showMessageDialog(this, "! Error Saving File: "+e.getMessage());
+            }
+        }
+
+    }
+    
     //made functions to make code clear/readable
     private void bufferInsert(int position, String text) {
         for (int i = 0; i < text.length(); i++) {
