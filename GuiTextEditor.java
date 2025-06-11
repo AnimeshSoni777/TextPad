@@ -9,6 +9,7 @@ public class GuiTextEditor extends JFrame {
     private Stack<Action> undoStack;
     private Stack<Action> redoStack;
     private JButton saveButton;
+    private JButton openButton;
     private JButton undoButton;
     private JButton redoButton;
     private boolean isProgrammaticChange = false;
@@ -32,14 +33,17 @@ public class GuiTextEditor extends JFrame {
     topPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 
     saveButton = new JButton("Save");
+    openButton = new JButton("Open");
     undoButton = new JButton("Undo");
     redoButton = new JButton("Redo");
 
     saveButton.addActionListener(e -> performSave());
+    openButton.addActionListener(e -> performOpen());
     undoButton.addActionListener(e -> performUndo());
     redoButton.addActionListener(e -> performRedo());
 
     topPanel.add(saveButton);
+    topPanel.add(openButton);
     topPanel.add(undoButton);
     topPanel.add(redoButton);
 
@@ -146,6 +150,34 @@ public class GuiTextEditor extends JFrame {
         }
 
     }
+
+    private void performOpen() {
+        JFileChooser fileChooser = new JFileChooser();
+        int option = fileChooser.showOpenDialog(this);
+    
+        if (option == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
+                    sb.append("\n");
+                }
+    
+                isProgrammaticChange = true; 
+                textArea.setText(sb.toString());
+                buffer.setContent(sb.toString()); 
+                undoStack.clear();
+                redoStack.clear();
+                isProgrammaticChange = false;
+    
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Error opening file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
     
     //made functions to make code clear/readable
     private void bufferInsert(int position, String text) {
