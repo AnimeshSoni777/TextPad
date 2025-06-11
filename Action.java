@@ -1,11 +1,11 @@
 public class Action {
     String type; 
     int position;
-    char character;
+    String text;
 
-    public Action(String type, int position, char character) {
+    public Action(String type, int position, String text) {
         this.type = type;
         this.position = position;
-        this.character = character;
+        this.text = text;
     }
 }
