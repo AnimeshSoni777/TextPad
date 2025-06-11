@@ -99,10 +99,39 @@ public class GuiTextEditor extends JFrame {
             }
 
             public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
-                remove(fb, offset, length);
-                insertString(fb, offset, text, attrs);
+                if (isProgrammaticChange) {
+                    super.replace(fb, offset, length, text, attrs);
+                    return;
+                }
+
+                StringBuilder deletedText = new StringBuilder();
+                for (int i = 0; i < length; i++) {
+                    deletedText.append(buffer.deleteAt(offset));
+                }
+
+                for (int i = 0; i < text.length(); i++) {
+                    buffer.insertAt(offset + i, text.charAt(i));
+                }
+
+                undoStack.push(new Action("replace", offset, deletedText.toString() + "|" + text));
+                redoStack.clear();
+
+                super.replace(fb, offset, length, text, attrs);
             }
         });
+    }
+
+    //made functions to make code clear/readable
+    private void bufferInsert(int position, String text) {
+        for (int i = 0; i < text.length(); i++) {
+            buffer.insertAt(position + i, text.charAt(i));
+        }
+    }
+
+    private void bufferDelete(int position, int length) {
+        for (int i = 0; i < length; i++) {
+            buffer.deleteAt(position);
+        }
     }
 
     private void performUndo() {
@@ -110,16 +139,32 @@ public class GuiTextEditor extends JFrame {
             Action last = undoStack.pop();
             isProgrammaticChange = true;
 
-            if (last.type.equals("insert")) {
-                buffer.deleteAt(last.position);
-                try {
-                    textArea.getDocument().remove(last.position, 1);
-                } catch (BadLocationException e) {}
-            } else if (last.type.equals("delete")) {
-                buffer.insertAt(last.position, last.character);
-                try {
-                    textArea.getDocument().insertString(last.position, String.valueOf(last.character), null);
-                } catch (BadLocationException e) {}
+            try {
+                switch (last.type) {
+                    case "insert":
+                        bufferDelete(last.position, last.text.length());
+                        textArea.getDocument().remove(last.position, last.text.length());
+                        break;
+
+                    case "delete":
+                        bufferInsert(last.position, last.text);
+                        textArea.getDocument().insertString(last.position, last.text, null);
+                        break;
+
+                    case "replace":
+                        String[] partsUndo = last.text.split("\\|", 2);
+                        String oldText = partsUndo[0];
+                        String newText = partsUndo[1];
+
+                        bufferDelete(last.position, newText.length());
+                        bufferInsert(last.position, oldText);
+
+                        textArea.getDocument().remove(last.position, newText.length());
+                        textArea.getDocument().insertString(last.position, oldText, null);
+                        break;
+                }
+            } catch (BadLocationException e) {
+                e.printStackTrace();
             }
 
             redoStack.push(last);
@@ -132,16 +177,32 @@ public class GuiTextEditor extends JFrame {
             Action next = redoStack.pop();
             isProgrammaticChange = true;
 
-            if (next.type.equals("insert")) {
-                buffer.insertAt(next.position, next.character);
-                try {
-                    textArea.getDocument().insertString(next.position, String.valueOf(next.character), null);
-                } catch (BadLocationException e) {}
-            } else if (next.type.equals("delete")) {
-                buffer.deleteAt(next.position);
-                try {
-                    textArea.getDocument().remove(next.position, 1);
-                } catch (BadLocationException e) {}
+            try {
+                switch (next.type) {
+                    case "insert":
+                        bufferInsert(next.position, next.text);
+                        textArea.getDocument().insertString(next.position, next.text, null);
+                        break;
+
+                    case "delete":
+                        bufferDelete(next.position, next.text.length());
+                        textArea.getDocument().remove(next.position, next.text.length());
+                        break;
+
+                    case "replace":
+                        String[] partsRedo = next.text.split("\\|", 2);
+                        String oldText = partsRedo[0];
+                        String newText = partsRedo[1];
+
+                        bufferDelete(next.position, oldText.length());
+                        bufferInsert(next.position, newText);
+
+                        textArea.getDocument().remove(next.position, oldText.length());
+                        textArea.getDocument().insertString(next.position, newText, null);
+                        break;
+                }
+            } catch (BadLocationException e) {
+                e.printStackTrace();
             }
 
             undoStack.push(next);
