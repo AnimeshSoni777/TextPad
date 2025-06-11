@@ -15,7 +15,7 @@ public class GuiTextEditor extends JFrame {
     private boolean isProgrammaticChange = false;
 
     public GuiTextEditor() {
-    setTitle("Simple GUI Text Editor");
+    setTitle("TextPad");
     setSize(700, 500);
     setDefaultCloseOperation(EXIT_ON_CLOSE);
     setLocationRelativeTo(null);
